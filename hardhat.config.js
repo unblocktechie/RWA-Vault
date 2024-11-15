@@ -188,16 +188,7 @@ module.exports = {
 		// https://hardhat.org/guides/compile-contracts.html
 		compilers: [
 			{ // project main compiler version
-				version: "0.8.4",
-				settings: {
-					optimizer: {
-						enabled: true,
-						runs: 200
-					}
-				}
-			},
-			{ // used to compile USDT mock
-				version: "0.4.11",
+				version: "0.8.9",
 				settings: {
 					optimizer: {
 						enabled: true,
