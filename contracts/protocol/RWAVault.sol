@@ -44,8 +44,6 @@ contract RWAVault is
     }
 
     function initialize(
-        string calldata _poolName,
-        string calldata _poolSymbol,
         address _poolManager,
         address _poolToken,
         address _treasury,
@@ -59,7 +57,7 @@ contract RWAVault is
         __UUPSUpgradeable_init();
         __Pausable_init();
         __ERC4626_init(IERC20Upgradeable(_poolToken));
-        __ERC20_init(_poolName, _poolSymbol);
+        __ERC20_init("RWA Vault", "RWAV");
 
         _grantRole(DEFAULT_ADMIN_ROLE, _poolManager);
         _grantRole(ROLE_ORACLE_MANAGER, _oracleManager);
