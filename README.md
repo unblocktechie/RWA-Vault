@@ -224,22 +224,22 @@ To rerun the deployment script and continue partially completed script skip the 
 The RWA smart contracts has been deployed to following testnets:
 
 1. Mantle Sepolia
-   * RWA Vault     | [0x9004AFffF01e0c812BbCd062344D6d858b799B35](https://sepolia.mantlescan.xyz/address/0x9004AFffF01e0c812BbCd062344D6d858b799B35#code) |
-   * RWA Leverage  | [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://sepolia.mantlescan.xyz/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015#code) |
+   * RWA Vault: [0x9004AFffF01e0c812BbCd062344D6d858b799B35](https://sepolia.mantlescan.xyz/address/0x9004AFffF01e0c812BbCd062344D6d858b799B35#code)
+   * RWA Leverage: [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://sepolia.mantlescan.xyz/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015#code)
 
 2. Linea Sepolia
-   * RWA Vault     | [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://sepolia.lineascan.build/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015#code) |        
-   * RWA Leverage: | [0x3Ab503f2f8b9Cf3181fAddCBF79ad9B108D2947c](https://sepolia.lineascan.build/address/0x3Ab503f2f8b9Cf3181fAddCBF79ad9B108D2947c#code) |
+   * RWA Vault: [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://sepolia.lineascan.build/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015#code)       
+   * RWA Leverage: [0x3Ab503f2f8b9Cf3181fAddCBF79ad9B108D2947c](https://sepolia.lineascan.build/address/0x3Ab503f2f8b9Cf3181fAddCBF79ad9B108D2947c#code)
 
 3. Unichain Sepolia
-   * RWA Vault     | [0x9004AFffF01e0c812BbCd062344D6d858b799B35](https://unichain-sepolia.blockscout.com/address/0x9004AFffF01e0c812BbCd062344D6d858b799B35?tab=contract) |          
-   * RWA Leverage  | [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://unichain-sepolia.blockscout.com/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015?tab=contract) |
+   * RWA Vault: [0x9004AFffF01e0c812BbCd062344D6d858b799B35](https://unichain-sepolia.blockscout.com/address/0x9004AFffF01e0c812BbCd062344D6d858b799B35?tab=contract)          
+   * RWA Leverage: [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://unichain-sepolia.blockscout.com/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015?tab=contract)
 
 4. Zircuit Testnet
-   * RWA Vault     | [0x9004AFffF01e0c812BbCd062344D6d858b799B35](https://explorer.testnet.zircuit.com/address/0x9004AFffF01e0c812BbCd062344D6d858b799B35) |          
-   * RWA Leverage  | [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://explorer.testnet.zircuit.com/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015) |
+   * RWA Vault: [0x9004AFffF01e0c812BbCd062344D6d858b799B35](https://explorer.testnet.zircuit.com/address/0x9004AFffF01e0c812BbCd062344D6d858b799B35)         
+   * RWA Leverage: [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://explorer.testnet.zircuit.com/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015)
 
 5. Morph Holesky
-   * RWA Vault      | [0x9004AFffF01e0c812BbCd062344D6d858b799B35](https://explorer-holesky.morphl2.io/address/0x9004AFffF01e0c812BbCd062344D6d858b799B35) |          
-   * RWA Leverage   | [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://explorer-holesky.morphl2.io/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015) |
+   * RWA Vault: [0x9004AFffF01e0c812BbCd062344D6d858b799B35](https://explorer-holesky.morphl2.io/address/0x9004AFffF01e0c812BbCd062344D6d858b799B35)          
+   * RWA Leverage: [0x0467D7C3c14E076D4bC412863A1edD3525D60015](https://explorer-holesky.morphl2.io/address/0x0467D7C3c14E076D4bC412863A1edD3525D60015)
 
