@@ -14,8 +14,10 @@ error NotUnlocked(address _staker);
 error AlreadyUnstaked(address _staker, uint256 _index);
 error InvalidAmount(uint256 _amount);
 error AlreadyBorrowed(address _staker, uint256 _amount);
+error NotBorrowed(address _staker);
 
 /// @title RWA Leverage
+/// @notice Extension of RWA Vault to manage liquidity lockups and leverage holdings
 contract RWALeverage is
     Initializable,
     AccessControlUpgradeable,
@@ -85,6 +87,10 @@ contract RWALeverage is
         _disableInitializers();
     }
 
+    /// @notice Initializes contract
+    /// @param _admin address of admin that is resposible for managing liquidity lockup operations
+    /// @param _rwaToken address of RWA Vault
+    /// @param _liquidityManager address of liquidity manager that is responsible for liquidations of loans
     function initialize(
         address _admin,
         address _rwaToken,
@@ -108,18 +114,27 @@ contract RWALeverage is
         penaltyAPY = 500;
     }
 
+    /// @notice returns number of lockups commited by lender
+    /// @param _staker address of lender
     function numberOfStakes(address _staker) external view returns(uint256) {
         return stakes[_staker].length;
     }
 
+    /// @notice returns stakes of given user
+    /// @param _staker address of staker 
     function allStakes(address _staker) external view returns(StakeInfo[] memory) {
         return stakes[_staker];
     }
 
+    /// @notice returns true if given address has liquidity manager role
+    /// @param _account address to query for role
     function isLiquidityManager(address _account) public view returns (bool) {
         return hasRole(ROLE_LIQUIDITY_MANAGER, _account);
     }
     
+    /// @notice stakes RWA vault shares for given period
+    /// @param _amount amount of shares to stake
+    /// @param _lockingPeriodInSeconds locking period converted in seconds
     function stake(uint256 _amount, uint32 _lockingPeriodInSeconds) external {
         if(_amount == 0 || (_lockingPeriodInSeconds % slice != 0) || (_lockingPeriodInSeconds < minStakeDurationAllowed) || (_lockingPeriodInSeconds > maxStakeDurationAllowed)) {
             revert InvalidInputs(_amount, _lockingPeriodInSeconds);
@@ -132,6 +147,8 @@ contract RWALeverage is
         leverages[_msgSender()].totalStaked += _amount;
     }
 
+    /// @notice unstakes given position
+    /// @param _index position number
     function unStake(uint256 _index) external {
         if(status != PoolStatus.ACTIVE) revert PoolIsNotActive();
         StakeInfo memory _stake = stakes[_msgSender()][_index];
@@ -145,6 +162,9 @@ contract RWALeverage is
         emit Unstaked(_msgSender(), _stake.amount, _index);
     }
 
+    /// @notice allow to borrow pool tokens from RWA vault reserve balance
+    /// @param _amount amount of tokens to be borrowed
+    /// @param _borrowPeriod borrowing period in seconds 
     function borrow(uint256 _amount, uint32 _borrowPeriod) external {
         if(status != PoolStatus.ACTIVE) revert PoolIsNotActive();
         LeverageInfo memory _leverage = leverages[_msgSender()];
@@ -157,9 +177,11 @@ contract RWALeverage is
         emit Borrowed(_msgSender(), _amount, borrowAPY, _paymentDue);
     }
 
+    /// @notice pays existing loan, penalty will be charged in case of late payment
     function pay() external {
         if(status != PoolStatus.ACTIVE) revert PoolIsNotActive();
         LeverageInfo memory _leverage = leverages[_msgSender()];
+        if(_leverage.totalBorrowed == 0) revert NotBorrowed(_msgSender());
         uint256 _borrowAPY = (block.timestamp > _leverage.paymentDue) ?
                                 _leverage.borrowAPY + penaltyAPY :
                                 _leverage.borrowAPY;
@@ -169,6 +191,8 @@ contract RWALeverage is
         emit Paid(_msgSender(), _payment, _leverage.borrowAPY, _leverage.borrowTime);
     }
 
+    /// @notice liquidates user loans in batch
+    /// @param _liquidate liquidation information
     function liquidate(LiquidateInfo[] calldata _liquidate) external onlyRole(ROLE_LIQUIDITY_MANAGER) {
         for(uint i; i < _liquidate.length; i++) {
             emit Liquidated(_liquidate[i].borrower, leverages[_liquidate[i].borrower], _liquidate[i]);
@@ -182,58 +206,76 @@ contract RWALeverage is
         }
     }
 
+    /// @notice withdraws RWA Vault shares from this contract to RWA Vault
     function withdraw(uint256 _amount) external onlyRole(ROLE_LIQUIDITY_MANAGER) {
         SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(rwaToken), RWAVault(rwaToken).treasury(), _amount);
         emit Withdrawn(RWAVault(rwaToken).treasury(), _amount);
     }
 
+    /// @notice updates pool status
+    /// @param _status status to update
     function updatePoolStatus(PoolStatus _status) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit PoolStatusUpdated(status, _status);
         status = _status;
     }
 
+    /// @notice updates slice period for staking
+    /// @param _slice slice period in seconds
     function updateSlicePeriod(uint32 _slice) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit SlicePeriodUpdated(slice, _slice);
         slice = _slice;
     }
 
+    /// @notice updates minimum and maximum period allowed for staking
+    /// @param _min minimum lockup period in seconds
+    /// @param _max maximum lockup period in seconds
     function updateMinMaxDurationAllowed(uint32 _min, uint32 _max) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit MinMaxStakeDurationUpdated(minStakeDurationAllowed, maxStakeDurationAllowed, _min, _max);
         minStakeDurationAllowed = _min;
         maxStakeDurationAllowed = _max;
     }
 
+    /// @notice updates borrow APY that will be charged to new loans
+    /// @param _borrowAPY percentage in 2 basis point (ex: for 10.03% => 1003)
     function updateBorrowAPY(uint128 _borrowAPY) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit BorrowAPYUpdated(borrowAPY, _borrowAPY);
         borrowAPY = _borrowAPY;
     }
 
+    /// @notice updates the allowed leverage for the system
+    /// @param _leverageAllowed the new leverage value to be set
     function updateLeverageAllowed(uint64 _leverageAllowed) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit LeverageAllowedUpdated(leverageAllowed, _leverageAllowed);
         leverageAllowed = _leverageAllowed;
     }
 
+    /// @notice Updates the penalty APY for overdue loans
+    /// @param _penaltyAPY percentage in 2 basis point (ex: for 10.03% => 1003)
     function updatePenaltyAPY(uint64 _penaltyAPY) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit PenaltyAPYUpdated(penaltyAPY, _penaltyAPY);
         penaltyAPY = _penaltyAPY;
     }
 
+    /// @notice adds new liquidity manager
     function addLiquidityManager(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
         grantRole(ROLE_LIQUIDITY_MANAGER, _account);
         emit LiquidityManagerAdded(_account);
     }
 
+    /// @notice removes existing liquidity manager
     function removeLiquidityManager(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
         revokeRole(ROLE_LIQUIDITY_MANAGER, _account);
         emit LiquidityManagerRemoved(_account);
     }
 
+    /// @notice transfer admin role to new account
     function transferAdmin(address _newOwner) public {
         grantRole(DEFAULT_ADMIN_ROLE, _newOwner);
         revokeRole(DEFAULT_ADMIN_ROLE, _msgSender());
         emit AdminTransferred(_msgSender(), _newOwner);
     }
 
+    /// @notice grants a role to account
     function grantRole(bytes32 role, address _account)
         public
         virtual
@@ -244,6 +286,7 @@ contract RWALeverage is
         _grantRole(role, _account);
     }
 
+    // revokes a role
     function revokeRole(bytes32 role, address _account)
         public
         override
@@ -253,6 +296,7 @@ contract RWALeverage is
         _revokeRole(role, _account);
     }
 
+    // @notice internal function to check authorized upgrades
     function _authorizeUpgrade(address _newImplementation)
         internal
         override
