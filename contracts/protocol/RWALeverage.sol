@@ -21,12 +21,14 @@ contract RWALeverage is
     AccessControlUpgradeable,
     UUPSUpgradeable
 {
+    bytes32 public constant ROLE_LIQUIDITY_MANAGER = keccak256("ROLE_LIQUIDITY_MANAGER");
     address public rwaToken;
     uint32 public slice;
     uint32 public maxStakeDurationAllowed;
     uint32 public minStakeDurationAllowed;
     uint128 public borrowAPY;
-    uint128 public leverageAllowed;
+    uint64 public leverageAllowed;
+    uint64 public penaltyAPY;
     PoolStatus public status;
     mapping(address => StakeInfo[]) public stakes;
     mapping(address => LeverageInfo) public leverages;
@@ -45,9 +47,20 @@ contract RWALeverage is
         uint32 borrowTime;
         uint32 paymentDue;
     }
+
+    struct LiquidateInfo {
+        address borrower;
+        uint256 totalStaked;
+        uint256 totalBorrowed;
+        uint128 borrowAPY;
+        uint32 borrowTime;
+        uint32 paymentDue;
+    }
     
     enum PoolStatus {PENDING, ACTIVE, CLOSE}
 
+    event LiquidityManagerAdded(address _account);
+    event LiquidityManagerRemoved(address _account);
     event AdminTransferred(address _oldOwner, address _newOwner);
     event PoolStatusUpdated(PoolStatus _prevStatus, PoolStatus _newStatus);
     event Staked(address indexed _staker, uint256 _amount, uint256 _index);
@@ -55,8 +68,12 @@ contract RWALeverage is
     event SlicePeriodUpdated(uint32 _prevValue, uint256 _newValue);
     event MinMaxStakeDurationUpdated(uint32 _min, uint32 _max, uint32 _newMin, uint32 _newMax);
     event BorrowAPYUpdated(uint128 _prevAPY, uint128 _newAPY);
-    event LeverageAllowedUpdated(uint128 _prevValue, uint128 _newValue);
-    event Borrowed(address indexed _borrower, uint256 _amount, uint32 _paymentDue);
+    event LeverageAllowedUpdated(uint64 _prevValue, uint64 _newValue);
+    event PenaltyAPYUpdated(uint64 _prevValue, uint64 _newValue);
+    event Borrowed(address indexed _borrower, uint256 _amount, uint128 _borrowAPY, uint32 _paymentDue);
+    event Paid(address indexed _borrower, uint256 _amount, uint128 _borrowAPY, uint32 _borrowTime);
+    event Liquidated(address indexed _borrower, LeverageInfo _leverage, LiquidateInfo _liquidate);
+    event Withdrawn(address indexed _to, uint256 _amount);
 
     modifier notZeroAddress(address _account) {
         require(_account != address(0), "address cannot be zero");
@@ -70,7 +87,8 @@ contract RWALeverage is
 
     function initialize(
         address _admin,
-        address _rwaToken
+        address _rwaToken,
+        address _liquidityManager
     )
         public
         initializer
@@ -80,12 +98,14 @@ contract RWALeverage is
         __UUPSUpgradeable_init();
         
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(ROLE_LIQUIDITY_MANAGER, _liquidityManager);
         rwaToken = _rwaToken;
         slice = 30 days;
         minStakeDurationAllowed = 30 days;
         maxStakeDurationAllowed = 360 days;
         borrowAPY = 1200;
         leverageAllowed = 7500;
+        penaltyAPY = 500;
     }
 
     function numberOfStakes(address _staker) external view returns(uint256) {
@@ -117,9 +137,14 @@ contract RWALeverage is
         borrowAPY = _borrowAPY;
     }
 
-    function updateLeverageAllowed(uint128 _leverageAllowed) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function updateLeverageAllowed(uint64 _leverageAllowed) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit LeverageAllowedUpdated(leverageAllowed, _leverageAllowed);
         leverageAllowed = _leverageAllowed;
+    }
+
+    function updatePenaltyAPY(uint64 _penaltyAPY) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit PenaltyAPYUpdated(penaltyAPY, _penaltyAPY);
+        penaltyAPY = _penaltyAPY;
     }
     
     function stake(uint256 _amount, uint32 _lockingPeriodInSeconds) external {
@@ -156,7 +181,52 @@ contract RWALeverage is
         uint32 _paymentDue = uint32(block.timestamp) + _borrowPeriod;
         leverages[_msgSender()] = LeverageInfo(_leverage.totalStaked, _amount, borrowAPY, uint32(block.timestamp), _paymentDue);
         // TODO: transfer borrow amount from treasury
-        emit Borrowed(_msgSender(), _amount, _paymentDue);
+        emit Borrowed(_msgSender(), _amount, borrowAPY, _paymentDue);
+    }
+
+    function pay() external {
+        if(status != PoolStatus.ACTIVE) revert PoolIsNotActive();
+        LeverageInfo memory _leverage = leverages[_msgSender()];
+        uint256 _borrowAPY = (block.timestamp > _leverage.paymentDue) ?
+                                _leverage.borrowAPY + penaltyAPY :
+                                _leverage.borrowAPY;
+        uint256 _payment = _leverage.totalBorrowed * _borrowAPY * (block.timestamp - _leverage.borrowTime) / (10000 * 360 days);
+        // TODO: transfer payment to treasury
+        // SafeERC20Upgradeable.safeTransferFrom(IERC20Upgradeable(RWAVault(rwaToken).asset()), _msgSender(), address(this), _paymentDue);
+        leverages[_msgSender()] = LeverageInfo(_leverage.totalStaked, 0, 0, 0, 0);
+        emit Paid(_msgSender(), _payment, _leverage.borrowAPY, _leverage.borrowTime);
+    }
+
+    function liquidate(LiquidateInfo[] calldata _liquidate) external onlyRole(ROLE_LIQUIDITY_MANAGER) {
+        for(uint i; i < _liquidate.length; i++) {
+            emit Liquidated(_liquidate[i].borrower, leverages[_liquidate[i].borrower], _liquidate[i]);
+            leverages[_liquidate[i].borrower] = LeverageInfo(
+                                                    _liquidate[i].totalStaked,
+                                                    _liquidate[i].totalBorrowed,
+                                                    _liquidate[i].borrowAPY,
+                                                    _liquidate[i].borrowTime,
+                                                    _liquidate[i].paymentDue
+                                                );
+        }
+    }
+
+    function withdraw(uint256 _amount) external onlyRole(ROLE_LIQUIDITY_MANAGER) {
+        SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(rwaToken), RWAVault(rwaToken).treasury(), _amount);
+        emit Withdrawn(RWAVault(rwaToken).treasury(), _amount);
+    }
+
+    function isLiquidityManager(address _account) public view returns (bool) {
+        return hasRole(ROLE_LIQUIDITY_MANAGER, _account);
+    }
+
+    function addLiquidityManager(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(ROLE_LIQUIDITY_MANAGER, _account);
+        emit LiquidityManagerAdded(_account);
+    }
+
+    function removeLiquidityManager(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        revokeRole(ROLE_LIQUIDITY_MANAGER, _account);
+        emit LiquidityManagerRemoved(_account);
     }
 
     function transferAdmin(address _newOwner) public {
