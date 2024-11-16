@@ -37,9 +37,10 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 		const vault_deployment = await deployments.get("RWAVault");
 		const usdc_deployment = await deployments.get("USDC");
 		const vault_contract = new web3.eth.Contract(vault_deployment.abi, vault_deployment.address);
-
+		const treasury = "0xa4045149288b737402535E0F58B52e157c90Cd8A"
+		
 		// prepare proxy initialization call bytes
-		const proxy_init_data = vault_contract.methods.initialize(A0, usdc_deployment.address, accounts[10], A0, 10e12).encodeABI();
+		const proxy_init_data = vault_contract.methods.initialize(A0, usdc_deployment.address, treasury, A0, 10e12).encodeABI();
 
 		// deploy RWA Vault ERC1967 Proxy
 		await deployments.deploy("RWAVault_Proxy", {
