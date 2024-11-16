@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract USDC is ERC20 {
   constructor() 
     ERC20("USDC", "USDC") {
-        _mint(msg.sender, 1000_000_000E06);
+        _mint(msg.sender, 10000000000000000000E6);
     }
   
   function decimals() public override pure returns (uint8) {

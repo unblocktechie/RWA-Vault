@@ -104,7 +104,7 @@ contract RWALeverage is
         minStakeDurationAllowed = 30 days;
         maxStakeDurationAllowed = 360 days;
         borrowAPY = 1200;
-        leverageAllowed = 7500;
+        leverageAllowed = 7000;
         penaltyAPY = 500;
     }
 
@@ -163,7 +163,7 @@ contract RWALeverage is
         uint256 _borrowAPY = (block.timestamp > _leverage.paymentDue) ?
                                 _leverage.borrowAPY + penaltyAPY :
                                 _leverage.borrowAPY;
-        uint256 _payment = _leverage.totalBorrowed * _borrowAPY * (block.timestamp - _leverage.borrowTime) / (10000 * 360 days);
+        uint256 _payment = _leverage.totalBorrowed + _leverage.totalBorrowed * _borrowAPY * (block.timestamp - _leverage.borrowTime) / (10000 * 360 days);
         SafeERC20Upgradeable.safeTransferFrom(IERC20Upgradeable(RWAVault(rwaToken).asset()), _msgSender(), rwaToken, _payment);
         leverages[_msgSender()] = LeverageInfo(_leverage.totalStaked, 0, 0, 0, 0);
         emit Paid(_msgSender(), _payment, _leverage.borrowAPY, _leverage.borrowTime);

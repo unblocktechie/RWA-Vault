@@ -56,9 +56,47 @@ async function get_rwaVault_upgradeable_deployment() {
 	return await Contract.at(address);
 }
 
+/**
+ * Gets RWA Leverage
+ *
+ * @returns RWA Leverage instance
+ */
+async function get_rwaLeverage_deployment() {
+	// make sure fixtures were deployed, this can be also done via --deploy-fixture test flag
+	// see https://github.com/wighawag/hardhat-deploy#creating-fixtures
+	await deployments.fixture();
+
+	// get deployed contract address
+	const {address} = await deployments.get("RWALeverage");
+
+	// connect to the contract instance and return it
+	const Contract = artifacts.require("./RWALeverage");
+	return await Contract.at(address);
+}
+
+/**
+ * Gets Upgradeable RWALeverage
+ *
+ * @returns Upgradeable RWALeverage instance (ERC1967 Proxy)
+ */
+async function get_rwaLeverage_upgradeable_deployment() {
+	// make sure fixtures were deployed, this can be also done via --deploy-fixture test flag
+	// see https://github.com/wighawag/hardhat-deploy#creating-fixtures
+	await deployments.fixture();
+
+	// get deployed contract address
+	const {address} = await deployments.get("RWALeverage_Proxy");
+
+	// connect to the contract instance and return it
+	const Contract = artifacts.require("./RWALeverage");
+	return await Contract.at(address);
+}
+
 // export public deployment API
 module.exports = {
 	get_erc20_deployment,
 	get_rwaVault_deployment,
 	get_rwaVault_upgradeable_deployment,
+	get_rwaLeverage_deployment,
+	get_rwaLeverage_upgradeable_deployment
 };

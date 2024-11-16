@@ -1,4 +1,4 @@
-// deploy: npx hardhat deploy --network <NETWORK_NAME> --tags RWAVault_Proxy
+// deploy: npx hardhat deploy --network <NETWORK_NAME> --tags RWALeverage_Proxy
 // verify: npx hardhat etherscan-verify --network <NETWORK_NAME> --api-key <SCAN_API_KEY>
 
 // script is built for hardhat-deploy plugin:
@@ -34,32 +34,33 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 	// RWAVault ERC1967Proxy
 	{
 		// get the deployment details
-		const vault_deployment = await deployments.get("RWAVault");
+		const vault_deployment = await deployments.get("RWAVault_Proxy");
 		const usdc_deployment = await deployments.get("USDC");
-		const vault_contract = new web3.eth.Contract(vault_deployment.abi, vault_deployment.address);
+		const leverage_deployment = await deployments.get("RWALeverage");
+		const leverage_contract = new web3.eth.Contract(leverage_deployment.abi, leverage_deployment.address);
 
 		// prepare proxy initialization call bytes
-		const proxy_init_data = vault_contract.methods.initialize(A0, usdc_deployment.address, accounts[10], A0, 10e12).encodeABI();
+		const proxy_init_data = leverage_contract.methods.initialize(A0, vault_deployment.address, A0).encodeABI();
 
-		// deploy RWA Vault ERC1967 Proxy
-		await deployments.deploy("RWAVault_Proxy", {
+		// deploy RWA Leverage ERC1967 Proxy
+		await deployments.deploy("RWALeverage_Proxy", {
 			// address (or private key) that will perform the transaction.
 			// you can use `getNamedAccounts` to retrieve the address you want by name.
 			from: A0,
 			contract: "ERC1967Proxy",
 			// the list of argument for the constructor (or the upgrade function in case of proxy)
-			args: [vault_deployment.address, proxy_init_data],
+			args: [leverage_deployment.address, proxy_init_data],
 			// if set it to true, will not attempt to deploy even if the contract deployed under the same name is different
 			skipIfAlreadyDeployed: true,
 			// if true, it will log the result of the deployment (tx hash, address and gas used)
 			log: true,
 		});
 		// get proxy deployment details
-		const proxy_deployment = await deployments.get("RWAVault_Proxy");
-		const proxy_contract = new web3.eth.Contract(vault_deployment.abi, proxy_deployment.address);
+		const proxy_deployment = await deployments.get("RWALeverage_Proxy");
+		const proxy_contract = new web3.eth.Contract(leverage_deployment.abi, proxy_deployment.address);
 
 		// print proxy deployment details
-		await print_contract_details(A0, vault_deployment.abi, proxy_deployment.address);
+		await print_contract_details(A0, leverage_deployment.abi, proxy_deployment.address);
 	}
 };
 
@@ -68,5 +69,5 @@ module.exports = async function({deployments, getChainId, getNamedAccounts, getU
 // Then if another deploy script has such tag as a dependency, then when the latter deploy script has a specific tag
 // and that tag is requested, the dependency will be executed first.
 // https://www.npmjs.com/package/hardhat-deploy#deploy-scripts-tags-and-dependencies
-module.exports.tags = ["RWAVault_Proxy", "deploy"];
-module.exports.dependencies = ["RWAVault", "USDC"];
+module.exports.tags = ["RWALeverage_Proxy", "deploy"];
+module.exports.dependencies = ["RWALeverage", "USDC", "RWAVault_Proxy"];
