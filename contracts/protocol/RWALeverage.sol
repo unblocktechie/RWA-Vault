@@ -180,7 +180,7 @@ contract RWALeverage is
         if(_amount > _userAssetValue * leverageAllowed / 10000) revert InvalidAmount(_amount);
         uint32 _paymentDue = uint32(block.timestamp) + _borrowPeriod;
         leverages[_msgSender()] = LeverageInfo(_leverage.totalStaked, _amount, borrowAPY, uint32(block.timestamp), _paymentDue);
-        // TODO: transfer borrow amount from treasury
+        RWAVault(rwaToken).grant(_msgSender(), _amount);
         emit Borrowed(_msgSender(), _amount, borrowAPY, _paymentDue);
     }
 
@@ -191,8 +191,7 @@ contract RWALeverage is
                                 _leverage.borrowAPY + penaltyAPY :
                                 _leverage.borrowAPY;
         uint256 _payment = _leverage.totalBorrowed * _borrowAPY * (block.timestamp - _leverage.borrowTime) / (10000 * 360 days);
-        // TODO: transfer payment to treasury
-        // SafeERC20Upgradeable.safeTransferFrom(IERC20Upgradeable(RWAVault(rwaToken).asset()), _msgSender(), address(this), _paymentDue);
+        SafeERC20Upgradeable.safeTransferFrom(IERC20Upgradeable(RWAVault(rwaToken).asset()), _msgSender(), rwaToken, _payment);
         leverages[_msgSender()] = LeverageInfo(_leverage.totalStaked, 0, 0, 0, 0);
         emit Paid(_msgSender(), _payment, _leverage.borrowAPY, _leverage.borrowTime);
     }

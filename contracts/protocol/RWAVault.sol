@@ -22,6 +22,7 @@ contract RWAVault is
     ERC4626Upgradeable
 {
     bytes32 public constant ROLE_ORACLE_MANAGER = keccak256("ROLE_ORACLE_MANAGER");
+    bytes32 public constant ROLE_GRANT_MANAGER = keccak256("ROLE_GRANT_MANAGER");
     address public poolToken;
     address public treasury;
     PoolStatus public status;
@@ -34,9 +35,12 @@ contract RWAVault is
     
     event OracleManagerAdded(address _account);
     event OracleManagerRemoved(address _account);
+    event GrantManagerAdded(address _account);
+    event GrantManagerRemoved(address _account);
     event AdminTransferred(address _oldOwner, address _newOwner);
     event PoolStatusUpdated(address indexed _by, PoolStatus _prevStatus, PoolStatus _newStatus);
     event AssetUnderManagementUpdated(address indexed _by, uint256 _prevValue, uint256 _newValue);
+    event Granted(address indexed _by, address _to, uint256 _amount);
     
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -64,21 +68,21 @@ contract RWAVault is
         poolToken = _poolToken;
         treasury = _treasury;
         poolSize = _poolSize;
-        nonReservePercentage = 9000;
+        nonReservePercentage = 7500;
     }
 
     function totalAssets() public view virtual override returns (uint256) {
         return  IERC20Upgradeable(poolToken).balanceOf(address(this)) +
-                IERC20Upgradeable(poolToken).balanceOf(address(this)) + 
+                IERC20Upgradeable(poolToken).balanceOf(treasury) +
                 assetUnderManagement;
     }
 
     function maxDeposit(address) public view virtual override returns (uint256) {
-        return poolSize - assetUnderManagement;
+        return poolSize - totalAssets();
     }
 
     function maxMint(address) public view virtual override returns (uint256) {
-        return previewDeposit(poolSize - assetUnderManagement);
+        return previewDeposit(poolSize - totalAssets());
     }
 
     function maxWithdraw(address) public view virtual override returns (uint256) {
@@ -109,6 +113,11 @@ contract RWAVault is
     function redeem(uint256 shares, address receiver, address owner) public virtual override returns (uint256) {
         if(status != PoolStatus.ACTIVE) revert PoolIsNotActive();
         return super.redeem(shares, receiver, owner);
+    }
+
+    function grant(address _to, uint256 _amount) external onlyRole(ROLE_GRANT_MANAGER) {
+        SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(poolToken), _to, _amount);
+        emit Granted(_msgSender(), _to, _amount);
     }
 
     function updatePoolSize(uint256 _poolSize) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -144,6 +153,10 @@ contract RWAVault is
         return hasRole(ROLE_ORACLE_MANAGER, _account);
     }
 
+    function isGrantManager(address _account) public view returns (bool) {
+        return hasRole(ROLE_GRANT_MANAGER, _account);
+    }
+
     function suppliedAPY() public view returns (int256 APY) {
         int256 _amount = int256(10 ** decimals());
         int256 amount = int256(convertToAssets(uint256(_amount)));
@@ -167,6 +180,16 @@ contract RWAVault is
     function removeOracleManager(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
         revokeRole(ROLE_ORACLE_MANAGER, _account);
         emit OracleManagerRemoved(_account);
+    }
+
+    function addGrantManager(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(ROLE_GRANT_MANAGER, _account);
+        emit GrantManagerAdded(_account);
+    }
+
+    function removeGrantManager(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        revokeRole(ROLE_GRANT_MANAGER, _account);
+        emit GrantManagerRemoved(_account);
     }
 
     function transferAdmin(address _newOwner) public {
