@@ -20,6 +20,10 @@
  *   - P_KEY48899 – zircuit testnet private key, should start with 0x
  *     or
  *   - MNEMONIC48899 – zircuit testnet mnemonic, 12 words
+ * 
+ * 	 - P_KEY2810 – morph testnet private key, should start with 0x
+ *     or
+ *   - MNEMONIC48899 – morph testnet mnemonic, 12 words
  *
  *   - ALCHEMY_KEY – Alchemy API key
  *     or
@@ -106,6 +110,14 @@ else if(process.env.P_KEY48899 && !process.env.P_KEY48899.startsWith("0x")) {
 	console.warn("P_KEY48899 doesn't start with 0x. Appended 0x");
 	process.env.P_KEY48899 = "0x" + process.env.P_KEY48899;
 }
+if(!process.env.MNEMONIC2810 && !process.env.P_KEY2810) {
+	console.warn("neither MNEMONIC2810 nor P_KEY2810 is not set. Morph testnet deployments won't be available");
+	process.env.MNEMONIC2810 = FAKE_MNEMONIC;
+}
+else if(process.env.P_KEY2810 && !process.env.P_KEY2810.startsWith("0x")) {
+	console.warn("P_KEY2810 doesn't start with 0x. Appended 0x");
+	process.env.P_KEY2810 = "0x" + process.env.P_KEY2810;
+}
 if(!process.env.INFURA_KEY && !process.env.ALCHEMY_KEY) {
 	console.warn("neither INFURA_KEY nor ALCHEMY_KEY is not set. Deployments may not be available");
 	process.env.INFURA_KEY = "";
@@ -130,6 +142,10 @@ if(!process.env.UNISCAN_KEY) {
 if(!process.env.ZIRCUITSCAN_KEY) {
 	console.warn("ZIRCUITSCAN_KEY is not set. Deployed smart contract code verification won't be available on ZircuitScan");
 	process.env.ZIRCUITSCAN_KEY = "";
+}
+if(!process.env.MORPHSCAN_KEY) {
+	console.warn("MORPHSCAN_KEY is not set. Deployed smart contract code verification won't be available on MorphScan");
+	process.env.MORPHSCAN_KEY = "";
 }
 
 /**
@@ -180,6 +196,11 @@ module.exports = {
 		zircuit: {
 			url: get_endpoint_url("zircuit"),
 			accounts: get_accounts(process.env.P_KEY48899, process.env.MNEMONIC48899),
+		},
+		// https://explorer-holesky.morphl2.io/
+		morph: {
+			url: get_endpoint_url("morph"),
+			accounts: get_accounts(process.env.P_KEY2810, process.env.MNEMONIC2810),
 		},
 	},
 
@@ -264,6 +285,9 @@ function get_endpoint_url(network_name) {
 	if(process.env.ZIRCUIT_RPC_URL && network_name === "zircuit") {
 		return process.env.ZIRCUIT_RPC_URL;
 	}
+	if(process.env.MORPH_RPC_URL && network_name === "morph") {
+		return process.env.MORPH_RPC_URL;
+	}
 
 	// try the alchemy next
 	// create a key: https://www.alchemy.com/
@@ -289,6 +313,7 @@ function get_endpoint_url(network_name) {
 		case "linea": return "https://rpc.sepolia.linea.build";
 		case "unichain": return "https://sepolia.unichain.org/";
 		case "zircuit":  return "https://zircuit1-testnet.liquify.com";
+		case "morph": return "https://rpc-quicknode-holesky.morphl2.io";
 	}
 
 	// fallback to default JSON_RPC_URL (if set)

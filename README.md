@@ -54,6 +54,7 @@ Following steps were tested to work in macOS Catalina
     3. Linea
     4. Unichain
     5. Zircuit
+    6. Morph
 
     You can use MetaMask to create mnemonics: https://metamask.io/
 
@@ -81,6 +82,7 @@ Following steps were tested to work in macOS Catalina
     | MNEMONIC59141        | Linea testnet mnemonic       |
     | MNEMONIC1301         | Unichain testnet mnemonic    |
     | MNEMONIC48899        | Zircuit testnet mnemonic     |
+    | MNEMONIC2810         | Morph testnet mnemonic       |
     | INFURA_KEY           | Infura access key            |
     | ETHERSCAN_KEY        | Etherscan API key            |
     | ARBISCAN_KEY         | arbiscan API key             |
@@ -113,6 +115,7 @@ If both infura and alchemy keys are set, alchemy is used.
     3. Linea
     4. Unichain
     5. Zircuit
+    6. Morph
 
     You can use MetaMask to export private keys: https://metamask.io/
 
@@ -130,6 +133,7 @@ If both infura and alchemy keys are set, alchemy is used.
     | P_KEY59141    | Linea testnet private key     |
     | P_KEY1301     | Unichain testnet private key  |
     | P_KEY48899    | Zircuit testnet private key   |
+    | P_KEY2810     | Morph testnet private key     |
     | ALCHEMY_KEY   | Alchemy API key               |
     | ETHERSCAN_KEY | Etherscan API key             |
     | ARBISCAN_KEY  | arbiscan API key              |
@@ -158,6 +162,7 @@ an environment variable:
 | LINEA_RPC_URL       | Linea testnet JSON-RPC endpoint URL     |
 | UNICHAIN_RPC_URL    | Unichain testnet JSON-RPC endpoint URL  |
 | ZIRCUIT_RPC_URL     | Zircuit testnet JSON-RPC endpoint URL   |
+| MORPH_RPC_URL       | Morph testnet JSON-RPC endpoint URL     |
 
 ## Compilation ##
 Execute ```npx hardhat compile``` command to compile smart contracts.
