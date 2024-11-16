@@ -116,35 +116,8 @@ contract RWALeverage is
         return stakes[_staker];
     }
 
-    function updatePoolStatus(PoolStatus _status) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        emit PoolStatusUpdated(status, _status);
-        status = _status;
-    }
-
-    function updateSlicePeriod(uint32 _slice) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        emit SlicePeriodUpdated(slice, _slice);
-        slice = _slice;
-    }
-
-    function updateMinMaxDurationAllowed(uint32 _min, uint32 _max) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        emit MinMaxStakeDurationUpdated(minStakeDurationAllowed, maxStakeDurationAllowed, _min, _max);
-        minStakeDurationAllowed = _min;
-        maxStakeDurationAllowed = _max;
-    }
-
-    function updateBorrowAPY(uint128 _borrowAPY) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        emit BorrowAPYUpdated(borrowAPY, _borrowAPY);
-        borrowAPY = _borrowAPY;
-    }
-
-    function updateLeverageAllowed(uint64 _leverageAllowed) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        emit LeverageAllowedUpdated(leverageAllowed, _leverageAllowed);
-        leverageAllowed = _leverageAllowed;
-    }
-
-    function updatePenaltyAPY(uint64 _penaltyAPY) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        emit PenaltyAPYUpdated(penaltyAPY, _penaltyAPY);
-        penaltyAPY = _penaltyAPY;
+    function isLiquidityManager(address _account) public view returns (bool) {
+        return hasRole(ROLE_LIQUIDITY_MANAGER, _account);
     }
     
     function stake(uint256 _amount, uint32 _lockingPeriodInSeconds) external {
@@ -214,8 +187,35 @@ contract RWALeverage is
         emit Withdrawn(RWAVault(rwaToken).treasury(), _amount);
     }
 
-    function isLiquidityManager(address _account) public view returns (bool) {
-        return hasRole(ROLE_LIQUIDITY_MANAGER, _account);
+    function updatePoolStatus(PoolStatus _status) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit PoolStatusUpdated(status, _status);
+        status = _status;
+    }
+
+    function updateSlicePeriod(uint32 _slice) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit SlicePeriodUpdated(slice, _slice);
+        slice = _slice;
+    }
+
+    function updateMinMaxDurationAllowed(uint32 _min, uint32 _max) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit MinMaxStakeDurationUpdated(minStakeDurationAllowed, maxStakeDurationAllowed, _min, _max);
+        minStakeDurationAllowed = _min;
+        maxStakeDurationAllowed = _max;
+    }
+
+    function updateBorrowAPY(uint128 _borrowAPY) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit BorrowAPYUpdated(borrowAPY, _borrowAPY);
+        borrowAPY = _borrowAPY;
+    }
+
+    function updateLeverageAllowed(uint64 _leverageAllowed) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit LeverageAllowedUpdated(leverageAllowed, _leverageAllowed);
+        leverageAllowed = _leverageAllowed;
+    }
+
+    function updatePenaltyAPY(uint64 _penaltyAPY) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        emit PenaltyAPYUpdated(penaltyAPY, _penaltyAPY);
+        penaltyAPY = _penaltyAPY;
     }
 
     function addLiquidityManager(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {

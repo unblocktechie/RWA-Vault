@@ -93,6 +93,21 @@ contract RWAVault is
         return _convertToShares(maxWithdraw(address(0)), MathUpgradeable.Rounding.Down);
     }
 
+    function suppliedAPY() public view returns (int256 APY) {
+        int256 _amount = int256(10 ** decimals());
+        int256 amount = int256(convertToAssets(uint256(_amount)));
+        int256 durationInDays = int256((block.timestamp - activationTime) / 1 days);
+        APY = ((amount - _amount) * 1e4 * 365) / (_amount * durationInDays);
+    }
+
+    function isOracleManager(address _account) public view returns (bool) {
+        return hasRole(ROLE_ORACLE_MANAGER, _account);
+    }
+
+    function isGrantManager(address _account) public view returns (bool) {
+        return hasRole(ROLE_GRANT_MANAGER, _account);
+    }
+
     function deposit(uint256 assets, address receiver) public virtual override returns (uint256 shares) {
         if(status != PoolStatus.ACTIVE) revert PoolIsNotActive();
         shares = super.deposit(assets, receiver);
@@ -115,6 +130,12 @@ contract RWAVault is
         return super.redeem(shares, receiver, owner);
     }
 
+    function updateAssetUnderManagement(uint256 _assetUnderManagement) external onlyRole(ROLE_ORACLE_MANAGER) {
+        if(status != PoolStatus.ACTIVE) revert PoolIsNotActive();
+        emit AssetUnderManagementUpdated(_msgSender(), assetUnderManagement, _assetUnderManagement);
+        assetUnderManagement = _assetUnderManagement;
+    }
+    
     function grant(address _to, uint256 _amount) external onlyRole(ROLE_GRANT_MANAGER) {
         SafeERC20Upgradeable.safeTransfer(IERC20Upgradeable(poolToken), _to, _amount);
         emit Granted(_msgSender(), _to, _amount);
@@ -139,29 +160,8 @@ contract RWAVault is
         status = PoolStatus.CLOSE;
     }
 
-    function updateAssetUnderManagement(uint256 _assetUnderManagement) external onlyRole(ROLE_ORACLE_MANAGER) {
-        if(status != PoolStatus.ACTIVE) revert PoolIsNotActive();
-        emit AssetUnderManagementUpdated(_msgSender(), assetUnderManagement, _assetUnderManagement);
-        assetUnderManagement = _assetUnderManagement;
-    }
-
     function updateNonReservePercentage(uint64 _percentage) external onlyRole(DEFAULT_ADMIN_ROLE) {
         nonReservePercentage = _percentage;
-    }
-
-    function isOracleManager(address _account) public view returns (bool) {
-        return hasRole(ROLE_ORACLE_MANAGER, _account);
-    }
-
-    function isGrantManager(address _account) public view returns (bool) {
-        return hasRole(ROLE_GRANT_MANAGER, _account);
-    }
-
-    function suppliedAPY() public view returns (int256 APY) {
-        int256 _amount = int256(10 ** decimals());
-        int256 amount = int256(convertToAssets(uint256(_amount)));
-        int256 durationInDays = int256((block.timestamp - activationTime) / 1 days);
-        APY = ((amount - _amount) * 1e4 * 365) / (_amount * durationInDays);
     }
 
     function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
